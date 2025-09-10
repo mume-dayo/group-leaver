@@ -38,18 +38,29 @@ async function leaveAllGroups() {
         
         log(`[i] ${groups.length}個のグループから離脱します`);
         
-        const promises = groups.map(async (group) => {
-            const response = await fetch(`https://discord.com/api/v9/channels/${group.id}`, {
-                method: 'DELETE',
-                headers: headers
+        const batchSize = 5;
+        const delay = 1000;
+        
+        for (let i = 0; i < groups.length; i += batchSize) {
+            const batch = groups.slice(i, i + batchSize);
+            
+            const promises = batch.map(async (group) => {
+                const response = await fetch(`https://discord.com/api/v9/channels/${group.id}`, {
+                    method: 'DELETE',
+                    headers: headers
+                });
+                
+                if (response.ok) {
+                    log(`[✓] ${group.name || 'グループDM'} から離脱完了 (${i + batch.indexOf(group) + 1}/${groups.length})`);
+                }
             });
             
-            if (response.ok) {
-                log(`[✓] ${group.name || 'グループDM'} から離脱完了`);
+            await Promise.all(promises);
+            
+            if (i + batchSize < groups.length) {
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
-        });
-        
-        await Promise.all(promises);
+        }
         log(`[✓] ${groups.length}件の処理が完了`);
         
     } catch (error) {
