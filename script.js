@@ -38,8 +38,8 @@ async function leaveAllGroups() {
         
         log(`[i] ${groups.length}個のグループから離脱します`);
         
-        const batchSize = 5;
-        const delay = 1000;
+        const batchSize = 10;
+        const delay = 500;
         
         for (let i = 0; i < groups.length; i += batchSize) {
             const batch = groups.slice(i, i + batchSize);
