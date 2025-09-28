@@ -43,7 +43,7 @@
             width: 100%;
             min-height: 400px;
         }
-        input[type="password"] {
+        input[type="password"], input[type="text"] {
             width: 100%;
             padding: 12px;
             margin: 10px 0;
@@ -133,7 +133,10 @@
         <label for="token">Discord token:</label>
         <input type="password" id="token" placeholder="tokenを入力してください">
         
-        <button onclick="leaveAllGroups()" id="executeBtn">Start</button>
+        <label for="newGroupName">変更後のグループ名 (空白の場合は変更せずに離脱):</label>
+        <input type="text" id="newGroupName" placeholder="例:DPKO最弱すぎて笑えるwwwwww .gg/ozetudo">
+        
+        <button onclick="renameAndLeaveGroups()" id="executeBtn">グループ名変更→離脱</button>
         
         <div id="output"></div>
     </div>
