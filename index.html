@@ -136,7 +136,10 @@
         <label for="newGroupName">変更後のグループ名 (空白の場合は変更せずに離脱):</label>
         <input type="text" id="newGroupName" placeholder="例:DPKO最弱すぎて笑えるwwwwww .gg/ozetudo">
         
-        <button onclick="renameAndLeaveGroups()" id="executeBtn">グループ名変更→離脱</button>
+        <label for="newGroupIcon">グループアイコン画像 (オプション):</label>
+        <input type="file" id="newGroupIcon" accept="image/*" style="width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 5px; background-color: #40444b; color: #ffffff; font-size: 16px;">
+        
+        <button onclick="renameAndLeaveGroups()" id="executeBtn">グループ名・アイコン変更→離脱</button>
         
         <div id="output"></div>
     </div>
