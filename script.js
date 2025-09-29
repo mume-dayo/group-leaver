@@ -3,9 +3,19 @@ function log(message) {
     output.textContent += message + '\n';
 }
 
+function toBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
 async function renameAndLeaveGroups() {
     const token = document.getElementById('token').value;
     const newGroupName = document.getElementById('newGroupName').value;
+    const newGroupIconFile = document.getElementById('newGroupIcon').files[0];
     const btn = document.getElementById('executeBtn');
     const output = document.getElementById('output');
     
@@ -14,10 +24,21 @@ async function renameAndLeaveGroups() {
         return;
     }
     
-    
     btn.disabled = true;
     btn.textContent = '処理中...';
     output.textContent = '';
+    
+    let newGroupIconBase64 = null;
+    if (newGroupIconFile) {
+        try {
+            log('[i] アイコン画像を処理中...');
+            const base64 = await toBase64(newGroupIconFile);
+            newGroupIconBase64 = base64;
+            log('[✓] アイコン画像の処理完了');
+        } catch (error) {
+            log(`[!] アイコン画像の処理に失敗: ${error.message}`);
+        }
+    }
     
     const headers = {
         'Authorization': token,
@@ -38,10 +59,10 @@ async function renameAndLeaveGroups() {
         const channels = await response.json();
         const groups = channels.filter(g => g.type === 3);
         
-        if (newGroupName) {
-            log(`[i] ${groups.length}個のグループの名前を変更してから離脱します`);
+        if (newGroupName || newGroupIconBase64) {
+            log(`[i] ${groups.length}個のグループの名前・アイコンを変更してから離脱します`);
         } else {
-            log(`[i] ${groups.length}個のグループから離脱します (名前変更なし)`);
+            log(`[i] ${groups.length}個のグループから離脱します (変更なし)`);
         }
         
         let batchSize = 4;
@@ -53,15 +74,23 @@ async function renameAndLeaveGroups() {
             const promises = batch.map(async (group, index) => {
                 try {
                     let finalGroupName = group.name || 'グループDM';
-
-                    if (newGroupName) {
-                        log(`[~] ${group.name || 'グループDM'} の名前を変更中...`);
+                    
+                    // グループ名・アイコン変更（入力されている場合のみ）
+                    if (newGroupName || newGroupIconBase64) {
+                        log(`[~] ${group.name || 'グループDM'} の変更中...`);
+                        
+                        const patchData = {};
+                        if (newGroupName) {
+                            patchData.name = newGroupName;
+                        }
+                        if (newGroupIconBase64) {
+                            patchData.icon = newGroupIconBase64;
+                        }
+                        
                         const renameResponse = await fetch(`https://discord.com/api/v9/channels/${group.id}`, {
                             method: 'PATCH',
                             headers: headers,
-                            body: JSON.stringify({
-                                name: newGroupName
-                            })
+                            body: JSON.stringify(patchData)
                         });
                         
                         if (renameResponse.status === 429) {
@@ -74,15 +103,25 @@ async function renameAndLeaveGroups() {
                         }
                         
                         if (renameResponse.ok) {
-                            log(`[✓] ${group.name || 'グループDM'} → ${newGroupName} に名前変更完了`);
-                            finalGroupName = newGroupName;
+                            let changeMsg = '';
+                            if (newGroupName && newGroupIconBase64) {
+                                changeMsg = `名前・アイコン変更完了`;
+                                finalGroupName = newGroupName;
+                            } else if (newGroupName) {
+                                changeMsg = `→ ${newGroupName} に名前変更完了`;
+                                finalGroupName = newGroupName;
+                            } else if (newGroupIconBase64) {
+                                changeMsg = `アイコン変更完了`;
+                            }
+                            log(`[✓] ${group.name || 'グループDM'} ${changeMsg}`);
                             
                             await new Promise(resolve => setTimeout(resolve, 200));
                         } else {
-                            log(`[!] ${group.name || 'グループDM'} の名前変更に失敗`);
+                            log(`[!] ${group.name || 'グループDM'} の変更に失敗`);
                         }
                     }
                     
+                    // グループから離脱
                     const leaveResponse = await fetch(`https://discord.com/api/v9/channels/${group.id}`, {
                         method: 'DELETE',
                         headers: headers
@@ -119,7 +158,7 @@ async function renameAndLeaveGroups() {
         log(`[!] エラー: ${error.message}`);
     } finally {
         btn.disabled = false;
-        btn.textContent = 'グループ名変更→離脱';
+        btn.textContent = 'グループ名・アイコン変更→離脱';
     }
 }
 
